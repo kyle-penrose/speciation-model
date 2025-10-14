@@ -41,8 +41,7 @@ to setup
       set step step + 1
     ]
     set genomef genomei / (2 ^ genome-size)
-    ;set color round(139.0 * genomef)
-    set color round(255.0)
+    set color round(139.0 * genomef)
     set size 3
     set shape "circle"
     setxy (random-float world-width)
