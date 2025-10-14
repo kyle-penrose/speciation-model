@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="utf-8"?>
+<model version="NetLogo 7.0.0" snapToGrid="false">
+  <code><![CDATA[globals
+[
+  timestep          ; counts how much time has passed
+]
+
+turtles-own
+[
+  genome
+  genomei
+  genomef
+]
+
+to setup
+  let step 0
+
+ ; random-seed 83
+
+  clear-output
+  ;; (for this model to work with NetLogo's new plotting features,
+  ;; __clear-all-and-reset-ticks should be replaced with clear-all at
+  ;; the beginning of your setup procedure and reset-ticks at the end
+  ;; of the procedure.)
+  ;; __clear-all-and-reset-ticks
+  clear-all
+  set timestep 0
+  crt num-agents
+  [
+    set genomei 0
+    set genome list (random 2) (random 2)
+    repeat genome-size - 2 [
+            set genome lput (random 2) genome
+    ]
+    ; print genome
+    set step 0
+    repeat genome-size [
+      ifelse ( item step genome = 0 )
+      [ set genomei genomei * 2 ]
+      [ set genomei 1 + genomei * 2]
+      set step step + 1
+    ]
+    set genomef genomei / (2 ^ genome-size)
+    set color round(139.0 * genomef)
+    set size 3
+    set shape "circle"
+    setxy (random-float world-width)
+          (random-float world-height)    ; randomize turtle locations
+  ]
+  setup-plot
+  plot-genomes
+end
+
+to go
+  if moving
+  [ move
+  ]
+  mate
+  set timestep timestep + 1
+  plot-genomes
+  reset-ticks
+end
+
+to move
+  ask turtles
+  [
+    rt random-float 30 - random-float 30
+    fd 2
+  ]
+end
+
+to mate
+  let difference 0
+  let biggest-difference 0
+  let most-different 0
+  let me 0
+  let friends []
+  let step 0
+  let cross-over1 0
+  let cross-over2 0
+
+;  without-interruption [
+    ask turtles [
+      set biggest-difference 0
+      set me self
+      set friends []
+      ifelse region
+      [ ask turtles in-radius region-size [
+        set friends lput self friends
+        ]
+      ]
+      [ ask other turtles
+        [ set friends lput self friends ]
+      ]
+      foreach friends [ ?1 ->
+        set difference 0
+        set step 0
+        repeat genome-size [
+          if ( item step [genome] of ?1 != item step [genome] of me )
+            [ set difference difference + 1 ]
+          set step step + 1
+        ]
+        if ( difference > biggest-difference )
+        [  set biggest-difference difference
+           set most-different ?1
+        ]
+      ]
+
+      if least [
+        set biggest-difference genome-size
+        foreach friends [ ?1 ->
+           set difference 0
+           set step 0
+           repeat genome-size [
+             if ( item step [genome] of ?1 != item step [genome] of me )
+               [ set difference difference + 1 ]
+             set step step + 1
+          ]
+          if ( difference < biggest-difference )
+           [  set biggest-difference difference
+              set most-different ?1
+           ]
+         ]
+      ]
+
+    set step 0
+
+;    set cross-over1 random (genome-size / 3.0) + round(genome-size / 3.0)
+
+    ifelse (fixed)
+       [ set cross-over1  crossover-location ]
+       [ ifelse (uniform)
+         [ set cross-over1 random genome-size ]
+         [ set cross-over1 random-normal (genome-size / 2.0) (genome-size / 6.0) ]
+       ]
+    ifelse (either)
+      [ set cross-over2 random 2 ]
+      [ set cross-over2 1 ]
+    repeat genome-size [
+      ifelse (cross-over2 = 0)
+      [ if (step >= cross-over1)
+        [set genome replace-item step genome item step [genome] of most-different]
+      ]
+      [ if (step < cross-over1)
+        [set genome replace-item step genome item step [genome] of most-different]
+      ]
+      if (mutate and ((random one-over-mutation-rate) = 0))
+      [set genome replace-item step genome (1 - (item step genome))]
+   ;   [ set genome-of most-different replace-item step genome-of most-different item step genome
+    ;  ]
+      set step step + 1
+    ]
+    set step 0
+    set genomei 0
+    repeat genome-size [
+      ifelse ( item step genome = 0 )
+      [ set genomei genomei * 2 ]
+      [ set genomei 1 + genomei * 2]
+      set step step + 1
+    ]
+    set genomef genomei / (2 ^ genome-size)
+    set color round(139.0 * genomef)
+
+   ]
+ ; ]
+
+end
+
+
+to plot-genomes
+  set-current-plot "Genomes"
+  set-current-plot-pen "genomes"
+  if full-plot
+  [  ask turtles [
+    plotxy timestep genomef
+    ]
+  ]
+
+  set-current-plot "Genome-distribution"
+  set-current-plot-pen "agents"
+  histogram [genomei] of turtles
+end
+
+
+to setup-plot
+
+  set-current-plot "Genomes"
+  set-plot-x-range 0 400
+  set-plot-y-range 0 1.0
+
+  set-current-plot "Genome-distribution"
+  set-plot-x-range 0 2 ^ genome-size
+  set-plot-y-range 0 round ((count turtles) / 5)
+  set-histogram-num-bars 100
+end]]></code>
+  <widgets>
+    <view x="290" wrappingAllowedX="true" y="22" frameRate="30.0" minPycor="-50" height="404" showTickCounter="true" patchSize="4.0" fontSize="10" wrappingAllowedY="true" width="404" tickCounterLabel="ticks" maxPycor="50" updateMode="0" maxPxcor="50" minPxcor="-50"></view>
+    <slider x="14" step="10" y="65" max="1000" width="172" display="num-agents" height="50" min="10" direction="Horizontal" default="350.0" variable="num-agents" units="agents"></slider>
+    <button x="15" y="17" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="55" display="setup">setup</button>
+    <button x="74" y="17" height="40" disableUntilTicks="false" forever="true" kind="Observer" width="55" display="go">go</button>
+    <plot x="2" autoPlotX="true" yMax="1.0" autoPlotY="true" yAxis="genome" y="347" xMin="0.0" height="203" legend="true" xMax="400.0" yMin="0.0" width="280" xAxis="timestep" display="genomes">
+      <setup></setup>
+      <update></update>
+      <pen interval="5.0" mode="2" display="genomes" color="-5825686" legend="false">
+        <setup></setup>
+        <update></update>
+      </pen>
+    </plot>
+    <monitor x="933" precision="3" y="37" height="60" fontSize="11" width="100" display="Time Step">timestep</monitor>
+    <switch x="190" y="65" height="40" on="true" variable="moving" width="90" display="moving"></switch>
+    <button x="132" y="17" height="40" disableUntilTicks="false" forever="false" kind="Observer" width="55" display="step">go</button>
+    <slider x="14" step="1" y="122" max="50" width="172" display="region-size" height="50" min="3" direction="Horizontal" default="16.0" variable="region-size"></slider>
+    <plot x="716" autoPlotX="true" yMax="1.0" autoPlotY="true" yAxis="number" y="123" xMin="0.0" height="295" legend="false" xMax="1.0" yMin="0.0" width="299" xAxis="genome" display="Genome-distribution">
+      <setup></setup>
+      <update></update>
+      <pen interval="1.0" mode="1" display="agents" color="-16777216" legend="true">
+        <setup></setup>
+        <update></update>
+      </pen>
+    </plot>
+    <slider x="14" step="5" y="177" max="500" width="172" display="one-over-mutation-rate" height="50" min="100" direction="Horizontal" default="175.0" variable="one-over-mutation-rate"></slider>
+    <slider x="14" step="4" y="232" max="24" width="172" display="genome-size" height="50" min="12" direction="Horizontal" default="20.0" variable="genome-size"></slider>
+    <switch x="192" y="247" height="40" on="false" variable="fixed" width="90" display="fixed"></switch>
+    <slider x="14" step="1" y="287" max="24" width="172" display="crossover-location" height="50" min="0" direction="Horizontal" default="2.0" variable="crossover-location"></slider>
+    <switch x="191" y="202" height="40" on="false" variable="uniform" width="90" display="uniform"></switch>
+    <switch x="191" y="17" height="40" on="true" variable="full-plot" width="92" display="full-plot"></switch>
+    <switch x="189" y="111" height="40" on="true" variable="region" width="91" display="region"></switch>
+    <switch x="190" y="156" height="40" on="true" variable="mutate" width="90" display="mutate"></switch>
+    <switch x="715" y="47" height="40" on="false" variable="least" width="103" display="least"></switch>
+    <switch x="824" y="47" height="40" on="true" variable="either" width="104" display="either"></switch>
+  </widgets>
+  <info>## WHAT IS IT?
+
+This NetLogo simulation is aimed at stimulating some thought about evolutionary processes.
+
+The basic idea is this:  there are a bunch of agents, each with a "genome" (a string of bits).  At each time step, each agent looks at its (nearby) neighbors and selects one to mate with.  The selection algorithm is to choose the neighbor who is most different (hamming distance of genomes) from you.  Reproduction is replacement of self by a single offspring, whose genome is the result of a crossover with the mate (a crossover point is selected; the new genome results from one parent up to the crossover point, and the other parent from there on -- which parent selected at random).  The crossover point is selected from a normal distribution with mean genome-size / 2, and standard deviation genome-size / 6.  There is also the possibility of mutation of a "gene" (a bit in the genome).
+
+
+## HOW TO USE IT
+
+Each pass through the GO function represents one time step.
+
+The histogram shows the number of agents having a given range of genomes.  The genomes are represented as the binary number corresponding to the genome bit string.</info>
+  <turtleShapes>
+    <shape name="default" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="5"></point>
+        <point x="40" y="250"></point>
+        <point x="150" y="205"></point>
+        <point x="260" y="250"></point>
+      </polygon>
+    </shape>
+    <shape name="abc" rotatable="true" editableColorIndex="0">
+      <line endX="210" startY="60" marked="false" color="-1491375361" endY="195" startX="75"></line>
+      <rectangle endX="210" startY="45" marked="false" color="-1491375361" endY="105" startX="105" filled="false"></rectangle>
+      <circle x="33" y="93" marked="false" color="-1491375361" diameter="85" filled="true"></circle>
+      <circle x="174" y="129" marked="false" color="-1491375361" diameter="42" filled="true"></circle>
+      <rectangle endX="186" startY="190" marked="false" color="-1491375361" endY="229" startX="148" filled="true"></rectangle>
+    </shape>
+    <shape name="arrow" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="0"></point>
+        <point x="0" y="150"></point>
+        <point x="105" y="150"></point>
+        <point x="105" y="293"></point>
+        <point x="195" y="293"></point>
+        <point x="195" y="150"></point>
+        <point x="300" y="150"></point>
+      </polygon>
+    </shape>
+    <shape name="box" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="45" y="255"></point>
+        <point x="255" y="255"></point>
+        <point x="255" y="45"></point>
+        <point x="45" y="45"></point>
+      </polygon>
+    </shape>
+    <shape name="circle" rotatable="true" editableColorIndex="0">
+      <circle x="35" y="35" marked="true" color="-1920102913" diameter="230" filled="true"></circle>
+    </shape>
+    <shape name="link" rotatable="true" editableColorIndex="0">
+      <line endX="150" startY="0" marked="true" color="-1920102913" endY="300" startX="150"></line>
+    </shape>
+    <shape name="link direction" rotatable="true" editableColorIndex="0">
+      <line endX="30" startY="150" marked="true" color="-1920102913" endY="225" startX="150"></line>
+      <line endX="270" startY="150" marked="true" color="-1920102913" endY="225" startX="150"></line>
+    </shape>
+    <shape name="person" rotatable="false" editableColorIndex="0">
+      <circle x="155" y="20" marked="true" color="-1920102913" diameter="63" filled="true"></circle>
+      <rectangle endX="217" startY="79" marked="true" color="-1920102913" endY="164" startX="158" filled="true"></rectangle>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="158" y="81"></point>
+        <point x="110" y="129"></point>
+        <point x="131" y="143"></point>
+        <point x="158" y="109"></point>
+        <point x="165" y="110"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="216" y="83"></point>
+        <point x="267" y="123"></point>
+        <point x="248" y="143"></point>
+        <point x="215" y="107"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="167" y="163"></point>
+        <point x="145" y="234"></point>
+        <point x="183" y="234"></point>
+        <point x="183" y="163"></point>
+      </polygon>
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="195" y="163"></point>
+        <point x="195" y="233"></point>
+        <point x="227" y="233"></point>
+        <point x="206" y="159"></point>
+      </polygon>
+    </shape>
+    <shape name="spacecraft" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="0"></point>
+        <point x="180" y="135"></point>
+        <point x="255" y="255"></point>
+        <point x="225" y="240"></point>
+        <point x="150" y="180"></point>
+        <point x="75" y="240"></point>
+        <point x="45" y="255"></point>
+        <point x="120" y="135"></point>
+      </polygon>
+    </shape>
+    <shape name="thin-arrow" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="150" y="0"></point>
+        <point x="0" y="150"></point>
+        <point x="120" y="150"></point>
+        <point x="120" y="293"></point>
+        <point x="180" y="293"></point>
+        <point x="180" y="150"></point>
+        <point x="300" y="150"></point>
+      </polygon>
+    </shape>
+    <shape name="truck-down" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="225" y="30"></point>
+        <point x="225" y="270"></point>
+        <point x="120" y="270"></point>
+        <point x="105" y="210"></point>
+        <point x="60" y="180"></point>
+        <point x="45" y="30"></point>
+        <point x="105" y="60"></point>
+        <point x="105" y="30"></point>
+      </polygon>
+      <polygon color="2085659903" filled="true" marked="false">
+        <point x="195" y="75"></point>
+        <point x="195" y="120"></point>
+        <point x="240" y="120"></point>
+        <point x="240" y="75"></point>
+      </polygon>
+      <polygon color="2085659903" filled="true" marked="false">
+        <point x="195" y="225"></point>
+        <point x="195" y="180"></point>
+        <point x="240" y="180"></point>
+        <point x="240" y="225"></point>
+      </polygon>
+    </shape>
+    <shape name="truck-left" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="120" y="135"></point>
+        <point x="225" y="135"></point>
+        <point x="225" y="210"></point>
+        <point x="75" y="210"></point>
+        <point x="75" y="165"></point>
+        <point x="105" y="165"></point>
+      </polygon>
+      <polygon color="2085659903" filled="true" marked="false">
+        <point x="90" y="210"></point>
+        <point x="105" y="225"></point>
+        <point x="120" y="210"></point>
+      </polygon>
+      <polygon color="2085659903" filled="true" marked="false">
+        <point x="180" y="210"></point>
+        <point x="195" y="225"></point>
+        <point x="210" y="210"></point>
+      </polygon>
+    </shape>
+    <shape name="truck-right" rotatable="false" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="180" y="135"></point>
+        <point x="75" y="135"></point>
+        <point x="75" y="210"></point>
+        <point x="225" y="210"></point>
+        <point x="225" y="165"></point>
+        <point x="195" y="165"></point>
+      </polygon>
+      <polygon color="2085659903" filled="true" marked="false">
+        <point x="210" y="210"></point>
+        <point x="195" y="225"></point>
+        <point x="180" y="210"></point>
+      </polygon>
+      <polygon color="2085659903" filled="true" marked="false">
+        <point x="120" y="210"></point>
+        <point x="105" y="225"></point>
+        <point x="90" y="210"></point>
+      </polygon>
+    </shape>
+    <shape name="turtle" rotatable="true" editableColorIndex="0">
+      <polygon color="-1920102913" filled="true" marked="true">
+        <point x="138" y="75"></point>
+        <point x="162" y="75"></point>
+        <point x="165" y="105"></point>
+        <point x="225" y="105"></point>
+        <point x="225" y="142"></point>
+        <point x="195" y="135"></point>
+        <point x="195" y="187"></point>
+        <point x="225" y="195"></point>
+        <point x="225" y="225"></point>
+        <point x="195" y="217"></point>
+        <point x="195" y="202"></point>
+        <point x="105" y="202"></point>
+        <point x="105" y="217"></point>
+        <point x="75" y="225"></point>
+        <point x="75" y="195"></point>
+        <point x="105" y="187"></point>
+        <point x="105" y="135"></point>
+        <point x="75" y="142"></point>
+        <point x="75" y="105"></point>
+        <point x="135" y="105"></point>
+      </polygon>
+    </shape>
+  </turtleShapes>
+  <linkShapes>
+    <shape name="default" curviness="0.0">
+      <lines>
+        <line x="-0.2" visible="false">
+          <dash value="0.0"></dash>
+          <dash value="1.0"></dash>
+        </line>
+        <line x="0.0" visible="true">
+          <dash value="1.0"></dash>
+          <dash value="0.0"></dash>
+        </line>
+        <line x="0.2" visible="false">
+          <dash value="0.0"></dash>
+          <dash value="1.0"></dash>
+        </line>
+      </lines>
+      <indicator>
+        <shape name="link direction" rotatable="true" editableColorIndex="0">
+          <line endX="90" startY="150" marked="true" color="-1920102913" endY="180" startX="150"></line>
+          <line endX="210" startY="150" marked="true" color="-1920102913" endY="180" startX="150"></line>
+        </shape>
+      </indicator>
+    </shape>
+  </linkShapes>
+  <previewCommands>setup repeat 75 [ go ]</previewCommands>
+</model>
