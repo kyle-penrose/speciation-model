@@ -15,3 +15,6 @@ A line graph will show the number of species over time, starting at 1. Data can 
 
 # REAL WORLD BACKGROUND
 Speciation happens as a result of a multitude of natural occurrences like geographic separation (known as allopatric speciation) or temporal, behavioral or mechanical isolation (known as sympatric speciation). Changes in allele frequencies over time among the breeding population result in further broad changes to the population. Eventually, a population that could once interbreed viable and fertile offspring become too different in one way or another, and two species appear.
+
+# FUNDAMENTAL QUESTION
+"Can we measure the effect and speed at which different types of reproductive isolation cause speciation?"
